@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Regalo;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class RegaloController extends Controller
@@ -12,7 +13,8 @@ class RegaloController extends Controller
      */
     public function index()
     {
-        $regalos = Regalo::orderBy('id','desc')->get();
+        // Eager load del user para evitar N+1
+        $regalos = Regalo::with('user')->orderBy('id','desc')->get();
         return view('index', compact('regalos'));
     }
 
@@ -21,7 +23,8 @@ class RegaloController extends Controller
      */
     public function create()
     {
-        return view('create');
+        $users = User::all();
+        return view('create', compact('users'));
     }
 
     /**
@@ -29,63 +32,48 @@ class RegaloController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:255']);
+        $data = $request->validate(['name' => 'required|string|max:255', 'user_id' => 'nullable|exists:users,id']);
 
-        // simple token check similar to middleware
-        if ($request->query('token') !== 'demo') {
-            return redirect()->route('regalos.index')->with('error', 'Token inválido');
-        }
-
-        Regalo::create($request->only('name'));
+        // El middleware ya valida token; aquí solo usamos Eloquent
+        Regalo::create($data);
         return redirect()->route('regalos.index')->with('success', 'Regalo creado');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Regalo $regalo)
     {
-        $regalo = Regalo::findOrFail($id);
+        // $regalo viene resuelto por route-model binding
+        $regalo->load('user');
         return view('show', compact('regalo'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Regalo $regalo)
     {
-        $regalo = Regalo::findOrFail($id);
-        return view('edit', compact('regalo'));
+        $users = User::all();
+        return view('edit', compact('regalo','users'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Regalo $regalo)
     {
-        $request->validate(['name' => 'required|string|max:255']);
-
-        if ($request->query('token') !== 'demo') {
-            return redirect()->route('regalos.index')->with('error', 'Token inválido');
-        }
-
-        $regalo = Regalo::findOrFail($id);
-        $regalo->update($request->only('name'));
+        $data = $request->validate(['name' => 'required|string|max:255', 'user_id' => 'nullable|exists:users,id']);
+        $regalo->update($data);
         return redirect()->route('regalos.index')->with('success', 'Regalo actualizado');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Regalo $regalo)
     {
-        // NOTE: token check for safety
-        request()->validate([]);
-        if (request()->query('token') !== 'demo') {
-            return redirect()->route('regalos.index')->with('error', 'Token inválido');
-        }
-
-        $regalo = Regalo::findOrFail($id);
+        // El middleware ya maneja autorización simple
         $regalo->delete();
         return redirect()->route('regalos.index')->with('success', 'Regalo eliminado');
     }

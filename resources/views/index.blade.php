@@ -5,7 +5,7 @@
 	<ul>
 	@forelse($regalos as $r)
 		<li>
-			{{ $r->name }} 
+			{{ $r->name }} @if($r->user) - <small>por {{ $r->user->name }}</small> @endif
 			<a href="{{ route('regalos.show', $r->id) }}">Ver</a>
 			<a href="{{ route('regalos.edit', $r->id) }}">Editar</a>
 			<form action="{{ route('regalos.destroy', $r->id) }}?token=demo" method="POST" style="display:inline">
