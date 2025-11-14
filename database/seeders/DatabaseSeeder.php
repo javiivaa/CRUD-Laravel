@@ -23,5 +23,7 @@ class DatabaseSeeder extends Seeder
         ]);
         // Regalos de ejemplo
         $this->call(\Database\Seeders\RegaloSeeder::class);
+        // Seeder demo que crea varios usuarios y regalos asociados
+        $this->call(\Database\Seeders\DemoSeeder::class);
     }
 }
